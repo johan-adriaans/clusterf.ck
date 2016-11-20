@@ -4,3 +4,12 @@
 [submodule "docker/webserver"]
 	path = docker/webserver
 	url = https://github.com/johan-adriaans/clusterf.ck-webserver
+[submodule "docker/shell-registrator"]
+	path = docker/shell-registrator
+	url = https://github.com/johan-adriaans/shell-registrator
+[submodule "docker/drbd"]
+	path = docker/drbd
+	url = https://github.com/johan-adriaans/fleet-drbd-for-nfs
+[submodule "docker/base-alpine"]
+	path = docker/base-alpine
+	url = https://github.com/johan-adriaans/docker-base-alpine
