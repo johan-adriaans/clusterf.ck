@@ -1,4 +1,4 @@
-# clusterf.ck demo
+# Clusterf.ck demo cluster
 
 ## Start
 ````
