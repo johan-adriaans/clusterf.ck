@@ -1,5 +1,12 @@
 # Clusterf.ck demo cluster
 
+## Requirements
+
+Recent versions of:
+- Ansible: https://www.ansible.com/
+- Vagrant: https://www.vagrantup.com/
+- VirtualBox: https://www.virtualbox.org/
+
 ## Start
 ````
 git clone --recursive https://github.com/johan-adriaans/clusterf.ck
