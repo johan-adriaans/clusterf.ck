@@ -1,0 +1,23 @@
+[Unit]
+Description=Shell Registrator
+After=docker.service
+After=docker-registry.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+RestartSec=15
+TimeoutStartSec=2m
+Restart=always
+ExecStartPre=-/usr/bin/docker kill shell-registrator
+ExecStartPre=-/usr/bin/docker rm shell-registrator
+ExecStartPre=/usr/bin/docker pull johanadriaans/shell-registrator
+ExecStart=/usr/bin/docker run --rm --name shell-registrator \
+  --net="host" \
+  -v /run/docker.sock:/tmp/docker.sock:ro \
+  --log-opt max-size=50m \
+  johanadriaans/shell-registrator
+ExecStop=/usr/bin/docker stop shell-registrator
+
+[X-Fleet]
+Global=true

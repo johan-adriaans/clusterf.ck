@@ -1,0 +1,25 @@
+[targets]
+localhost ansible_connection=local
+cluster-member-1 ansible_ssh_host=127.0.0.1 ansible_ssh_port=2222 region=laptop private_ipv4=10.0.0.10 meta_name=member-1
+cluster-member-2 ansible_ssh_host=127.0.0.1 ansible_ssh_port=2200 region=laptop private_ipv4=10.0.0.11 meta_name=member-2
+cluster-member-3 ansible_ssh_host=127.0.0.1 ansible_ssh_port=2201 region=laptop private_ipv4=10.0.0.12 meta_name=member-3
+
+[members]
+cluster-member-1
+cluster-member-2
+cluster-member-3
+
+[cluster-provisioner]
+cluster-member-3
+
+[cluster:children]
+members
+
+[cluster:vars]
+cluster_environment=vagrant
+galera_cluster_size=3
+cluster_domain=local
+etcd_cluster_status=new
+ansible_ssh_user=core
+ansible_python_interpreter="/home/core/bin/python"
+drbd_device=/dev/sdb

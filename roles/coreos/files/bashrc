@@ -1,0 +1,11 @@
+if [[ $- != *i* ]] ; then
+  # Shell is non-interactive.  Be done now!
+  return
+fi
+
+# Move /opt/bin to start of path
+export PATH=/mnt/data/bin:/opt/bin:$(echo $PATH | sed 's#:/opt/bin##g')
+
+# These help me :)
+export TERM=xterm-256color
+alias vi=vim

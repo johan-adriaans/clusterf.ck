@@ -1,0 +1,6 @@
+[submodule "docker/loadblancer"]
+	path = docker/loadbalancer
+	url = https://github.com/johan-adriaans/clusterf.ck-loadbalancer
+[submodule "docker/webserver"]
+	path = docker/webserver
+	url = https://github.com/johan-adriaans/clusterf.ck-webserver

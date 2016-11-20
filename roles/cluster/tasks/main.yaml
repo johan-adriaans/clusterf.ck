@@ -1,0 +1,247 @@
+---
+
+# Set up NFS server and clients
+- name: Create /core/units directory
+  become: true
+  file: path=/home/core/units state=directory mode=0755 owner=core group=core
+
+# DRBD service
+- name: Copy drbd-service unit template
+  become: yes
+  register: drbd_unit
+  copy: src=drbd@.service dest=/home/core/units/drbd@.template owner=core group=core mode=0664
+
+- name: Copy drbd-service unit template to actual service file
+  become: yes
+  when: drbd_unit.changed
+  copy: src=/home/core/units/drbd@.template dest=/home/core/units/drbd@.service remote_src=True owner=core group=core mode=0664
+
+- name: Set correct DRBD Device
+  become: yes
+  register: drbd_device
+  replace: dest=/home/core/units/drbd@.service regexp='/dev/sdxxx' replace='{{drbd_device}}' backup=no
+
+- name: Destroy drbd units
+  become: yes
+  when: (drbd_unit.changed) or (drbd_device.changed)
+  ignore_errors: yes
+  shell: /usr/bin/fleetctl destroy drbd@{1,2}.service
+
+- name: Start drbd unit
+  become: yes
+  shell: /usr/bin/fleetctl start drbd@{1,2}.service chdir=/home/core/units
+  register: result
+  changed_when: result.stdout != ""
+
+- name: Wait for DRBD to load kernel module
+  wait_for: path=/proc/drbd
+  delegate_to: "{{groups['members'][0]}}"
+
+- name: Wait for DRBD disk to init and sync
+  register: result
+  action: shell cat /proc/drbd
+  until: result.stdout.find("ds:UpToDate/UpToDate")
+  when: (drbd_unit.changed) or (drbd_device.changed)
+  retries: 10
+  delay: 10
+  delegate_to: "{{groups['members'][0]}}"
+
+# NFS ip
+- name: Copy nfs-ip service unit
+  become: yes
+  register: nfsip_unit
+  copy: src=nfs-ip.service dest=/home/core/units owner=core group=core mode=0664
+
+- name: Destroy nfs-ip units
+  become: yes
+  when: nfsip_unit.changed
+  ignore_errors: yes
+  shell: /usr/bin/fleetctl destroy nfs-ip.service
+
+- name: Start nfs-ip unit
+  become: yes
+  shell: /usr/bin/fleetctl start nfs-ip.service chdir=/home/core/units
+  register: result
+  changed_when: result.stdout != ""
+
+# NFS client
+- name: Copy nfs-client service unit
+  become: yes
+  register: nfsclient_unit
+  copy: src=nfs-client.service dest=/home/core/units owner=core group=core mode=0664
+
+- name: Destroy nfs-client units
+  become: yes
+  when: nfsclient_unit.changed
+  ignore_errors: yes
+  shell: /usr/bin/fleetctl destroy nfs-client.service
+
+- name: Start global nfs-client unit
+  become: yes
+  shell: /usr/bin/fleetctl start nfs-client.service chdir=/home/core/units
+  register: result
+  changed_when: result.stdout != ""
+
+- name: Wait for NFS server
+  wait_for: path=/mnt/data/.initiated
+
+##
+## NFS server present 
+##
+
+# Create NFS folders
+- name: Create /mnt/data/ssl directory for ssl certificates
+  become: true
+  file: path=/mnt/data/ssl state=directory mode=0755 owner=core group=core
+
+- name: Generate default certificate
+  shell: openssl req -new -newkey rsa:4096 -days 365 -nodes -x509 -subj "/C=US/ST=Denial/L=Springfield/O=Dis/CN=clusterf.ck.driaans.nl/subjectAltName=*.clusterf.uk.driaans.nl" -keyout default.key -out default.cert && cat default.key default.cert > /mnt/data/ssl/default.pem && rm default.cert default.key creates=/mnt/data/ssl/default.pem
+  become: true
+
+- name: Create /mnt/data/access_control directory
+  become: true
+  file: path=/mnt/data/access_control state=directory mode=0755 owner=core group=core
+
+- name: Create /mnt/data/access_control/badbots.lst file
+  become: true
+  file: path=/mnt/data/access_control/badbots.lst state=touch mode=0755 owner=core group=core
+
+- name: Create /mnt/data/access_control/whitelist.lst file
+  become: true
+  file: path=/mnt/data/access_control/whitelist.lst state=touch mode=0755 owner=core group=core
+
+- name: Create /mnt/data/access_control/blacklist.lst file
+  become: true
+  file: path=/mnt/data/access_control/blacklist.lst state=touch mode=0755 owner=core group=core
+
+- name: Create /mnt/data/user_data directory
+  become: true
+  file: path=/mnt/data/user_data state=directory mode=0755 owner=core group=core
+
+- name: Create /mnt/data/user_data/_forwarders directory
+  become: true
+  file: path=/mnt/data/user_data/_forwarders state=directory mode=0755 owner=core group=core
+
+- name: Create /mnt/data/user_data/_domains directory
+  become: true
+  file: path=/mnt/data/user_data/_domains state=directory mode=0755 owner=core group=core
+
+- name: Create /mnt/data/user_data/_default_site/httpdocs directory
+  become: true
+  file: path=/mnt/data/user_data/_default_site/httpdocs state=directory mode=0755 owner=core group=core
+
+- name: Copy default index.php
+  become: yes
+  copy: src=index.php dest=/mnt/data/user_data/_default_site/httpdocs/index.php owner=core group=core mode=0664
+
+# log client
+- name: Copy and (re-)start log-client unit when changed
+  become: yes
+  register: result
+  copy: src=log-client.service dest=/home/core/units owner=core group=core mode=0664
+
+- name: Destroy log-client
+  become: yes
+  ignore_errors: yes
+  when: result.changed
+  shell: /usr/bin/fleetctl destroy log-client.service
+
+- name: Submit log-client to fleetctl (it will be started by the log-server)
+  become: yes
+  shell: /usr/bin/fleetctl submit log-client chdir=/home/core/units
+  register: result
+  changed_when: result.stdout != ''
+
+# log server
+- name: Copy and (re-)start log-server unit when changed
+  become: yes
+  register: result
+  copy: src=log-server.service dest=/home/core/units owner=core group=core mode=0664
+
+- name: Destroy log-server
+  become: yes
+  ignore_errors: yes
+  when: result.changed
+  shell: /usr/bin/fleetctl destroy log-server.service
+
+- name: Start log-server
+  become: yes
+  shell: /usr/bin/fleetctl start log-server chdir=/home/core/units
+  register: result
+  changed_when: result.stdout != ""
+
+# shell-registrator
+- name: Copy and (re-)start shell-registrator unit when changed
+  become: yes
+  register: registrator_unit
+  copy: src=shell-registrator.service dest=/home/core/units owner=core group=core mode=0664
+
+- name: Destroy shell-registrator
+  become: yes
+  when: registrator_unit.changed
+  ignore_errors: yes
+  shell: /usr/bin/fleetctl destroy shell-registrator.service
+
+- name: Start shell-registrator
+  become: yes
+  shell: /usr/bin/fleetctl start shell-registrator.service chdir=/home/core/units
+  register: result
+  changed_when: result.stdout != ""
+
+# Floating IP
+- name: Copy and (re-)start floating-ip unit when changed
+  become: yes
+  register: result
+  copy: src=floating-ip.service dest=/home/core/units owner=core group=core mode=0664
+
+- name: Destroy floating-ip
+  become: yes
+  ignore_errors: yes
+  when: result.changed
+  shell: /usr/bin/fleetctl destroy floating-ip.service
+
+- name: Start floating-ip
+  become: yes
+  shell: /usr/bin/fleetctl start floating-ip.service chdir=/home/core/units
+  register: result
+  changed_when: result.stdout != ""
+
+# webserver (service Nginx + php-fpm)
+- name: Copy and (re-)start webserver unit when changed
+  become: yes
+  register: result
+  copy: src=webserver.service dest=/home/core/units owner=core group=core mode=0664
+
+- name: Destroy webserver
+  become: yes
+  ignore_errors: yes
+  when: result.changed
+  shell: /usr/bin/fleetctl destroy webserver.service
+
+- name: Start webserver
+  become: yes
+  shell: /usr/bin/fleetctl start webserver.service chdir=/home/core/units
+  register: result
+  changed_when: result.stdout != ""
+
+# Loadbalancer
+- name: Copy and (re-)start loadbalancer unit when changed
+  become: yes
+  register: result
+  copy: src=loadbalancer.service dest=/home/core/units owner=core group=core mode=0664
+
+- name: Copy loadbalancer fallback unit file
+  become: yes
+  copy: src=loadbalancer-fallback.service dest=/home/core/units owner=core group=core mode=0664
+
+- name: Destroy loadbalancer
+  become: yes
+  ignore_errors: yes
+  when: result.changed
+  shell: /usr/bin/fleetctl destroy loadbalancer.service
+
+- name: Start loadbalancer
+  become: yes
+  shell: /usr/bin/fleetctl start loadbalancer.service chdir=/home/core/units
+  register: result
+  changed_when: result.stdout != ""

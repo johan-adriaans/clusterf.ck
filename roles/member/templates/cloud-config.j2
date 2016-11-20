@@ -1,0 +1,101 @@
+#cloud-config
+
+hostname: "{{ inventory_hostname_short }}"
+ssh_pwauth: false
+disable_root: true
+
+coreos:
+  # etcd-lock: Reboot after first taking a distributed lock in etcd, this guarantees that only one host will reboot concurrently and that the cluster will remain available during the update.
+  update:
+    reboot-strategy: "etcd-lock"
+  locksmith:
+    window_start: "Tue 03:00"
+    window_length: "3h"
+  etcd2:
+    name: "{{ inventory_hostname_short }}"
+    initial-advertise-peer-urls: "http://{{ private_ipv4 }}:2380"
+    initial-cluster-token: "etcd-demo-cluster"
+    initial-cluster: "{% for host in groups['members'] -%}
+      {{ host }}=http://{{ hostvars[host]['private_ipv4'] }}:2380{% if not loop.last %},{% endif %}
+    {%- endfor %}"
+    # To re-create member remove member (etcdctl member list, etcdctl member remove [id]) and set this variable to existing
+    initial-cluster-state: "{{ etcd_cluster_status }}"
+    advertise-client-urls: "http://{{ private_ipv4 }}:2379"
+    listen-client-urls: "http://0.0.0.0:2379"
+    listen-peer-urls: "http://{{ private_ipv4 }}:2380"
+    heartbeat-interval: 250
+    election-timeout: 1500
+  fleet:
+    metadata: "region={{ region }},role=member,name={{ meta_name }}"
+    etcd_servers: "http://localhost:2379"
+    public_ip: "{{ private_ipv4 }}"
+  units:
+    - name: etcd2.service
+      command: start
+    - name: fleet.service
+      command: start
+    - name: generate-network-env.service
+      command: start
+      content: |
+        [Unit]
+        Description=Generates /etc/network.env file
+        After=systemd-networkd.service
+        Requires=systemd-networkd.service
+        [Service]
+        Type=oneshot
+        ExecStart=/usr/bin/sh -c "/usr/bin/echo MY_PRIVATE_IPV4={{ private_ipv4 }} > /etc/network.env"
+    - name: "10-static.network"
+      runtime: true
+      content: |
+        [Match]
+        MACAddress={{ ansible_eth1.macaddress }}
+        [Network]
+        Address={{ private_ipv4 }}/24
+    - name: systemd-sysctl.service
+      command: restart
+
+    # Add swap, just to be sure
+    - name: create-swap.service
+      command: start
+      runtime: true
+      content: |
+        [Unit]
+        Description=Create swap file
+        Before=swap.service
+
+        [Service]
+        Type=oneshot
+        Environment="SWAPFILE=/256mb.swap"
+        ExecStart=/usr/bin/touch ${SWAPFILE}
+        ExecStart=/usr/bin/chattr +C ${SWAPFILE}
+        ExecStart=/usr/bin/fallocate -l 256m ${SWAPFILE}
+        ExecStart=/usr/bin/chmod 600 ${SWAPFILE}
+        ExecStart=/usr/sbin/mkswap ${SWAPFILE}
+
+        [Install]
+        WantedBy=multi-user.target
+    - name: swap.service
+      command: start
+      content: |
+        [Unit]
+        Description=Turn on swap
+
+        [Service]
+        Type=oneshot
+        Environment="SWAPFILE=/256mb.swap"
+        RemainAfterExit=true
+        ExecStartPre=/usr/sbin/losetup -f ${SWAPFILE}
+        ExecStart=/usr/bin/sh -c "/sbin/swapon $(/usr/sbin/losetup -j ${SWAPFILE} | /usr/bin/cut -d : -f 1)"
+        ExecStop=/usr/bin/sh -c "/sbin/swapoff $(/usr/sbin/losetup -j ${SWAPFILE} | /usr/bin/cut -d : -f 1)"
+        ExecStopPost=/usr/bin/sh -c "/usr/sbin/losetup -d $(/usr/sbin/losetup -j ${SWAPFILE} | /usr/bin/cut -d : -f 1)"
+
+        [Install]
+        WantedBy=multi-user.target
+
+write_files:
+  - path: /etc/sysctl.d/swap.conf
+    permissions: 0644
+    owner: root
+    content: |
+      vm.swappiness=10
+      vm.vfs_cache_pressure=50

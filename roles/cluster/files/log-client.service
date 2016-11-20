@@ -1,0 +1,15 @@
+[Unit]
+Description=Journald log client
+After=docker.service
+After=docker-registry.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+RestartSec=15
+TimeoutStartSec=2m
+Restart=always
+ExecStart=/usr/bin/sh -c "/usr/lib/systemd/systemd-journal-upload -u http://$(fleetctl list-units | grep log-server.service | awk '{print $2}' | cut -d'/' -f2):19531 --save-state"
+
+[X-Fleet]
+Global=true

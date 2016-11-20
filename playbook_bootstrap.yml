@@ -1,0 +1,9 @@
+---
+- hosts: cluster
+  gather_facts: False
+  roles:
+    - coreos-bootstrap
+
+- hosts: members
+  roles:
+    - member

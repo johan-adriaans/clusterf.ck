@@ -1,0 +1,11 @@
+---
+dependencies: 
+  - { role: "coreos" }
+
+galaxy_info:
+  author: Johan Adriaans
+  description: "Setup cloud-init for our CoreOS masters"
+  license: "MIT"
+  min_ansible_version: 1.4
+  categories:
+    - system

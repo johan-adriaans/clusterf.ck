@@ -1,0 +1,17 @@
+[Unit]
+Description=Journald log server
+After=docker.service
+After=docker-registry.service
+Requires=docker.service
+
+[Service]
+EnvironmentFile=/etc/network.env
+TimeoutStartSec=0
+RestartSec=15
+TimeoutStartSec=2m
+Restart=always
+ExecStartPre=-/usr/bin/fleetctl stop log-client.service
+ExecStart=/usr/lib/systemd/systemd-journal-remote --split-mode=none --listen-http=${MY_PRIVATE_IPV4}:19531 --output=/var/log/journal/remote/cluster.journal
+ExecStartPost=/usr/bin/fleetctl start log-client.service
+ExecStopPre=/usr/bin/fleetctl stop log-server.service
+ExecStop=/usr/bin/fleetctl stop log-client.service

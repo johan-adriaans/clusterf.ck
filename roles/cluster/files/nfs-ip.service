@@ -1,0 +1,41 @@
+[Unit]
+Description=Handle nfs, floating internal ip and drbd promotion
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+Restart=always
+RestartSec=10
+TimeoutStartSec=2m
+RemainAfterExit=yes
+
+# Make sure the mount folder is present
+ExecStartPre=-/usr/bin/mkdir -p /opt/drbd1
+
+# Clean up first
+ExecStartPre=-/usr/bin/systemctl stop rpc-mountd
+ExecStartPre=-/usr/bin/umount /opt/drbd1
+ExecStartPre=-/usr/bin/docker exec drbd drbdadm secondary all
+ExecStartPre=-/usr/bin/ip addr del 10.0.0.5/24 dev eth1
+
+# Make primary, mount, add ip and broadcast it
+ExecStartPre=/usr/bin/docker exec drbd drbdadm primary all
+ExecStartPre=/usr/bin/mount /dev/drbd1 /opt/drbd1
+ExecStartPre=/usr/bin/touch /opt/drbd1/.initiated
+ExecStartPre=/usr/bin/ip addr add 10.0.0.5/24 brd 10.0.0.255 dev eth1
+ExecStartPost=/usr/bin/docker run --net=host --entrypoint /usr/sbin/arping --rm johanadriaans/docker-base-alpine:3.4 -c 10 -U -I eth1 10.0.0.5
+
+# Start NFS server
+ExecStartPre=/bin/sh -c "echo '/opt/drbd1 10.0.0.5/24(rw,async,no_subtree_check,no_root_squash,fsid=0)' > /etc/exports"
+ExecStart=/usr/bin/systemctl start rpc-mountd
+
+# Stop NFS, unmount, make secondary and remove IP
+ExecStop=/usr/bin/systemctl stop rpc-mountd
+ExecStopPost=/usr/bin/umount /opt/drbd1
+ExecStopPost=/usr/bin/docker exec drbd drbdadm secondary all
+ExecStopPost=/usr/bin/ip addr del 10.0.0.5/24 dev eth1
+
+[X-Fleet]
+MachineMetadata=name=member-1
+MachineMetadata=name=member-2

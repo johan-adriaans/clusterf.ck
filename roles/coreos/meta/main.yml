@@ -1,0 +1,8 @@
+---
+galaxy_info:
+  author: Johan Adriaans
+  description: "Setup common tasks for CoreOS machines"
+  license: "MIT"
+  min_ansible_version: 1.4
+  categories:
+    - system

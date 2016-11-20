@@ -1,0 +1,4 @@
+---
+- hosts: cluster-provisioner
+  roles:
+    - cluster

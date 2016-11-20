@@ -1,0 +1,8 @@
+- name: run cloud-init
+  become: yes
+  command: /usr/bin/coreos-cloudinit --from-file=/usr/share/oem/cloud-config.yml
+
+- name: reload systemd
+  become: yes
+  command: systemctl daemon-reload
+

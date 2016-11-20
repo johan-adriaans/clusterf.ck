@@ -1,0 +1,15 @@
+[Unit]
+Description=Handle floating IP 10.0.0.100
+After=docker.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+RestartSec=5
+TimeoutStartSec=2m
+Restart=always
+RemainAfterExit=yes
+ExecStartPre=-/usr/bin/ip addr del 10.0.0.100/32 dev eth0
+ExecStart=/usr/bin/ip addr add 10.0.0.100/32 brd 10.0.0.255 dev eth0
+ExecStartPost=/usr/bin/docker run --net=host --entrypoint /usr/sbin/arping --rm alpine:3.4 -c 10 -U -I eth0 10.0.0.100
+ExecStop=/usr/bin/ip addr del 10.0.0.100/32 dev eth0

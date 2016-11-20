@@ -1,0 +1,37 @@
+[Unit]
+Description=DRBD Disk sync service
+After=docker.service
+After=docker-registry.service
+Requires=docker.service
+
+[Service]
+TimeoutStartSec=0
+RestartSec=15
+TimeoutStartSec=2m
+Restart=always
+ExecStartPre=-/usr/bin/docker kill drbd
+ExecStartPre=-/usr/bin/docker rm drbd
+ExecStartPre=/usr/bin/docker pull johanadriaans/fleet-drbd-for-nfs
+ExecStart=/usr/bin/docker run \
+  --name drbd \
+  --rm \
+  --net host \
+  -e DRBD_DEVICE=/dev/sdxxx \
+  -e EMAIL_ROOT_ACCOUNT=demo@just-a-demo.xyz \
+  -e SMTP_SERVER=127.0.0.1 \
+  -e SMTP_USER=none\
+  -e SMTP_PASS=none \
+  -e SMTP_REWRITE_DOMAIN=just-a-demo.xyz \
+  -e DRBD_HOSTNAME_1=cluster-member-1 \
+  -e DRBD_HOSTNAME_2=cluster-member-2 \
+  -e DRBD_ADDRESS_1=10.0.0.10:7789 \
+  -e DRBD_ADDRESS_2=10.0.0.11:7789 \
+  -v /lib/modules:/lib/modules:ro \
+  -v /dev:/dev \
+  --privileged \
+  --log-opt max-size=50m \
+  johanadriaans/fleet-drbd-for-nfs
+ExecStop=/usr/bin/docker stop drbd
+
+[X-Fleet]
+MachineMetadata=name=member-%i

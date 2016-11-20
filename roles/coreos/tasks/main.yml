@@ -1,0 +1,10 @@
+- name: Copy custom .bashrc to core user home
+  copy: src=bashrc dest=/home/core/.bashrc owner=core group=core mode=0664
+
+- name: Copy custom .toolboxrc to core user home
+  copy: src=toolboxrc dest=/home/core/.toolboxrc owner=core group=core mode=0664
+
+- name: Copy systemd-user to /etc/pam.d to prevent "user@500.service Failed at step PAM spawning" errors
+  become: true
+  copy: src=systemd-user dest=/etc/pam.d/systemd-user owner=root group=root mode=0664
+
