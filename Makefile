@@ -33,6 +33,7 @@ bootstrap-cluster:
 start: init
 	@echo "Bringing up vagrant cluster"
 	@vagrant up
+	@eval `ssh-agent` && ssh-add ~/.vagrant.d/insecure_private_key
 
 sleep:
 	@vagrant halt
