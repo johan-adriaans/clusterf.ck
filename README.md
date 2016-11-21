@@ -13,6 +13,7 @@ git clone --recursive https://github.com/johan-adriaans/clusterf.ck
 cd clusterf.ck
 make start
 make bootstrap-cluster
+make log # And wait for everything to load
 ````
 
 ## Status
