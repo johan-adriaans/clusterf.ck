@@ -14,19 +14,21 @@ help:
 	@echo "  log               Show all logs"
 	@echo "  clean             Clean un environment, also destroying servers"
 
+start:
+	@echo "Bringing up vagrant cluster"
+	@-ssh-keygen -R [127.0.0.1]:2222 2>/dev/null
+	@-ssh-keygen -R [127.0.0.1]:2200 2>/dev/null
+	@-ssh-keygen -R [127.0.0.1]:2201 2>/dev/null
+	@vagrant up
+
 bootstrap-servers:
-	@-eval `ssh-agent` && ssh-add $(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $2}')
+	@-eval $(ssh-agent) && ssh-add "$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $2}' | tr -d \")"
 	@ansible-playbook -i inventory/vagrant playbook_bootstrap.yml
 
 bootstrap-cluster:
 	@echo "Installing services"
-	@-eval `ssh-agent` && ssh-add $(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $2}')
+	@-eval $(ssh-agent) && ssh-add "$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $2}' | tr -d \")"
 	@ansible-playbook -i inventory/vagrant playbook_cluster.yml
-
-start:
-	@echo "Bringing up vagrant cluster"
-	@-eval `ssh-agent` && ssh-add $(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $2}')
-	@vagrant up
 
 sleep:
 	@vagrant halt
@@ -39,5 +41,7 @@ log:
 
 clean:
 	@vagrant destroy -f
-	@sed -i -e '/127.0.0.1/d' ~/.ssh/known_hosts
-	@rm -rf .vagrant_nfs_share
+	@-ssh-keygen -R [127.0.0.1]:2222
+	@-ssh-keygen -R [127.0.0.1]:2200
+	@-ssh-keygen -R [127.0.0.1]:2201
+	@rm -f .vagrant_nfs_share
