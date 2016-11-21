@@ -22,12 +22,12 @@ start:
 	@vagrant up
 
 bootstrap-servers:
-	@-eval $(ssh-agent) && ssh-add "$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $2}' | tr -d \")"
+	@-eval $$(ssh-agent) && ssh-add "$$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $$2}' | tr -d \")"
 	@ansible-playbook -i inventory/vagrant playbook_bootstrap.yml
 
 bootstrap-cluster:
 	@echo "Installing services"
-	@-eval $(ssh-agent) && ssh-add "$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $2}' | tr -d \")"
+	@-eval $$(ssh-agent) && ssh-add "$$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $$2}' | tr -d \")"
 	@ansible-playbook -i inventory/vagrant playbook_cluster.yml
 
 sleep:
