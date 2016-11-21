@@ -22,13 +22,11 @@ start:
 	@vagrant up
 
 bootstrap-servers:
-	@-eval $$(ssh-agent) && ssh-add "$$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $$2}' | tr -d \")"
-	@ansible-playbook -i inventory/vagrant playbook_bootstrap.yml
+	@ansible-playbook -i inventory/vagrant playbook_bootstrap.yml --private-key "$$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $$2}' | tr -d \")"
 
 bootstrap-cluster:
 	@echo "Installing services"
-	@-eval $$(ssh-agent) && ssh-add "$$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $$2}' | tr -d \")"
-	@ansible-playbook -i inventory/vagrant playbook_cluster.yml
+	@ansible-playbook -i inventory/vagrant playbook_cluster.yml --private-key "$$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $$2}' | tr -d \")"
 
 sleep:
 	@vagrant halt
@@ -37,7 +35,7 @@ wake:
 	@vagrant up
 
 log:
-	@vagrant ssh cluster-member-1 --command "fleetctl ssh -A -unit log-server sudo journalctl -f -D /var/log/journal/remote"
+	@eval `ssh-agent` && ssh-add "$$(vagrant ssh-config cluster-member-1 | grep IdentityFile | awk '{print $$2}' | tr -d \")" && vagrant ssh cluster-member-1 --command "fleetctl ssh -A -unit log-server sudo journalctl -f -D /var/log/journal/remote"
 
 clean:
 	@vagrant destroy -f
