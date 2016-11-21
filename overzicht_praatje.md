@@ -1,0 +1,51 @@
+# Overzicht praatje
+
+- Wat is een cluster
+  - Minimum eisen (coreos, etcd (fleet))
+  - Master election
+  - Scheduling
+  - Service discovery
+- Waarom wil je een cluster
+  - Maintainance zonder downtime
+  - Horizontaal schalen
+- Waarom wil je geen cluster
+  - Complexiteit
+  - Groter probleem bij uitvallen van n/2+1 servers.
+  - Steile leercurve
+- Gedeelde data
+  - NFS+DRBD
+  - GlusterFS (RedHat)
+  - Flocker
+  - Ceph
+  - HDFS
+  - GFS (Google)
+  - Torus (CoreOS, maar in alpha)
+  - etc.
+- Logging / Metrics / Alerts
+- Databases (Galera, nosql, sharding)a
+- Centrale cluster data
+  - etcd
+  - consul
+  - zookeeper
+- Orchestration
+  - Kubernetes (rolling updates, canaries etc.)
+  - Mesos (volwassen)
+  - Swarm (Docker)
+  - Fleet (Cluster wide systemd) (kiss)
+- Overlay networking
+  - Hoeft niet, met duidelijke service discovery
+  - Flannel (tcp over udp (vxlan))
+  - Flannel wordt vaak met SkyDNS gecombineerd = service discovery met DNS
+- Loadbalancers (Niet alleen HTTP)
+  - SSL Offloading
+  - Floating ip
+
+- Hoe vervult het demo-cluster welke rollen?
+- CoreOS
+  - Deelt de SDK met Gentoo, Chromium OS, Chrome OS
+  - Gebruikt een active en passive partitie voor updates
+  - Kan alleen containers draaien (geen package manager) en kan daarom automatisch worden geupdated
+  - Software kan statisch worden gecompiled in een container en worden gekopieerd
+  - Sinds januari 2015 stabiel
+- Etcd2
+- Fleet
