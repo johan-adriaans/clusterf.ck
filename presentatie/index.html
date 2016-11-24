@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Clusterf.ck</title>
+    <meta charset="utf-8">
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif:400,700,400italic);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body { font-family: 'Droid Serif'; color: #eee; }
+      .remark-container, .remark-slide-content { background: #333; }
+      .remark-slide-scaler { box-shadow: none; }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: normal;
+        text-align: center;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      ul { width: 450px; margin: 0 auto; }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle
+
+# Cluster[fh].ck
+
+---
+
+# Wat is een cluster
+### Twee of meer servers die zich gedragen als een enkel systeem
+
+--
+
+- Shared data
+- Message passing
+- Task scheduling
+- Node failure management
+
+---
+
+# Waarom wil je een cluster
+- Maintainance zonder downtime
+- Horizontaal schalen
+
+---
+
+# Waarom wil je geen cluster
+- Complexiteit
+- Groter probleem bij uitvallen van n/2+1 servers.
+- Steile leercurve
+
+---
+
+# Centrale cluster data + Message passing
+- etcd
+- consul
+- zookeeper
+- Heartbeat
+
+---
+
+# Gedeelde block devices
+- NFS+DRBD
+- GlusterFS (RedHat)
+- Flocker
+- Ceph
+- HDFS
+- GFS (Google)
+- Torus (CoreOS, maar in alpha)
+- etc.
+
+---
+
+# Split brain
+
+- 2n+1 &amp; n+1
+- n+1 volstaat bij direct synchroniserende data of statische data
+- Altijd 2n+1 bij data die achteraf wordt gesynchroniseerd
+- DRBD (met Protocol C) syncroniseert data naar de slave voor het schrijven naar de master. Split-brain kan dus niet voorkomen.
+- Etcd en bijvoorbeeld Galera hebben meer risico op split-brain en hebben dus 2n+1 nodig
+
+---
+
+# Logging / Metrics / Alerts
+
+- Centraal via journald
+- Extern via bv. nagios
+- Log -> Externe dienst (bv. datadog)
+
+---
+
+# Databases (Galera, nosql, sharding)
+
+- Databases die sharding ondersteunen (MySQL Cluster, MongoDB, MonetDB etc.)
+- Databases met live synchronisatie
+  - master-slave (Mysql, Postgrs)
+  - master-master (Galera)
+
+---
+
+# Orchestration / Resource management
+
+- Pacemaker (Volwassen Redhat+Suse sinds 2004)
+- Mesos (volwassen sinds 2011)
+- Fleet (Cluster wide systemd sinds 2013)
+- Kubernetes (rolling updates, canaries etc. stable sinds 2016)
+- Swarm (Docker released 2016)
+
+---
+
+# Overlay networking
+- Hoeft niet, met duidelijke service discovery
+- Flannel (tcp over udp (vxlan))
+- Flannel wordt vaak met SkyDNS gecombineerd = service discovery met DNS
+- Docker swarm
+
+---
+
+# Loadbalancers (Niet alleen HTTP)
+- SSL Offloading
+- Floating ip
+
+---
+
+# Over het demo cluster
+
+### https://github.com/johan-adriaans/clusterf.ck
+
+---
+
+# Hoe vervult het demo-cluster welke rollen?
+
+- Shared data (DRBD+NFS)
+- Message passing (Etcd2)
+- Task scheduling (Fleet)
+- Node failure management (Fleet)
+
+---
+
+# CoreOS
+- Deelt de SDK met Gentoo, Chromium OS, Chrome OS
+- Gebruikt een active en passive partitie voor updates
+- Kan alleen containers draaien (geen package manager) en kan daarom automatisch worden geupdatet
+- Software kan evt. statisch worden gecompiled in een container en worden gekopieerd
+- Sinds januari 2015 stabiel
+
+---
+
+# Etcd2
+
+- Distributed HA Key-value store
+- 2n+1 servers + proxy op de workers
+
+---
+
+# Fleet
+
+- Systemd voor clusters
+- Gebruikt etcd om systemd units op de cluster machines te schedulen
+- Max 1000 units
+
+    </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html>
