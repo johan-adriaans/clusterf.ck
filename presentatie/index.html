@@ -9,6 +9,7 @@
       @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
 
       body { font-family: 'Droid Serif'; color: #eee; }
+      a { color: #aaa; }
       .remark-container, .remark-slide-content { background: #333; }
       .remark-slide-scaler { box-shadow: none; }
       h1, h2, h3 {
@@ -17,7 +18,7 @@
         text-align: center;
       }
       .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
-      ul { width: 450px; margin: 0 auto; }
+      ul { width: 500px; margin: 0 auto; }
     </style>
   </head>
   <body>
@@ -161,6 +162,56 @@ class: center, middle
 - Systemd voor clusters
 - Gebruikt etcd om systemd units op de cluster machines te schedulen
 - Max 1000 units
+
+---
+
+# Containers aan elkaar knopen
+
+- Registrator
+- Confd
+- Intern netwerk
+
+---
+
+# Registrator
+
+- Luister op iedere machine naar docker events
+- Registreert draaiende containers in etcd
+
+---
+
+# Confd
+
+- Luistert naar etcd
+- Gebruikt GO templates om config files te bouwen, testen en in te laden
+
+---
+
+# Haproxy + floating ip
+
+- Floating ip zorgt voor enkel entrypoint
+- Haproxy verdeelt requests
+
+---
+
+# Subdomains
+
+- cd /mnt/data/user_data
+- mkdir -p [folder]/httpdocs
+- echo '&lt;?php phpinfo();' &gt; [folder]/httpdocs/index.php
+- http://[folder].clusterf.ck.driaans.nl
+
+---
+
+# Eigen containers
+
+- Zelf een docker registry draaien
+- Storage kiezen en koppelen (S3 is fijn)
+- Containers pushen en pullen van localhost:5000/container
+
+---
+
+# Wing it! :)
 
     </textarea>
     <script src="https://remarkjs.com/downloads/remark-latest.min.js">
